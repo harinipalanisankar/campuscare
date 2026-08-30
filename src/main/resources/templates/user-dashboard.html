@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CampusCare - Student Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+    <!-- Header / Navbar -->
+    <nav class="navbar">
+        <a href="/user" class="nav-brand">
+            <div class="nav-brand-icon">
+                <i class="fa-solid fa-graduation-cap"></i>
+            </div>
+            <span>CampusCare</span>
+        </a>
+        <div class="nav-right">
+            <div class="nav-user-badge">
+                <i class="fa-solid fa-user-graduate"></i>
+                <span th:text="${session.user != null ? session.user.name : 'Student Portal'}">Student Portal</span>
+            </div>
+            <a href="/complaint/new" class="btn-nav">
+                <i class="fa-solid fa-plus"></i>
+                <span>Raise Complaint</span>
+            </a>
+            <a href="/logout" class="btn-outline">
+                <i class="fa-solid fa-right-from-bracket"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Page Title & Header -->
+        <div class="page-header">
+            <div class="page-title">
+                <h2>Student Grievance Dashboard</h2>
+                <p>Track your submitted complaints, view technician assignments, and provide feedback</p>
+            </div>
+        </div>
+
+        <!-- Feedback Sent Success Alert -->
+        <div th:if="${param.feedbackSent != null}" class="alert alert-success">
+            <i class="fa-solid fa-circle-check"></i>
+            <span><strong>Feedback Recorded:</strong> Your feedback has been updated and notified to administration.</span>
+        </div>
+        <div th:if="${param.feedbackDeleted != null}" class="alert alert-success">
+            <i class="fa-solid fa-circle-check"></i>
+            <span><strong>Feedback Deleted:</strong> The feedback for the selected complaint has been deleted.</span>
+        </div>
+        <div th:if="${param.allFeedbackDeleted != null}" class="alert alert-success">
+            <i class="fa-solid fa-circle-check"></i>
+            <span><strong>History Cleared:</strong> All your feedback history has been deleted successfully.</span>
+        </div>
+
+        <!-- Stats Overview Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-info">
+                    <h4>Total Submitted</h4>
+                    <div class="stat-value" th:text="${list != null ? list.size() : 0}">0</div>
+                </div>
+                <div class="stat-icon blue">
+                    <i class="fa-solid fa-folder-open"></i>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-info">
+                    <h4>Pending Grievances</h4>
+                    <div class="stat-value" th:text="${list != null ? #lists.size(list.?[status == 'Pending' || status == 'In Progress']) : 0}">0</div>
+                </div>
+                <div class="stat-icon amber">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-info">
+                    <h4>Resolved Issues</h4>
+                    <div class="stat-value" th:text="${list != null ? #lists.size(list.?[status == 'Resolved']) : 0}">0</div>
+                </div>
+                <div class="stat-icon emerald">
+                    <i class="fa-solid fa-circle-check"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Complaints Data Grid Card -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fa-solid fa-list-check" style="color: var(--primary);"></i>
+                    <span>My Complaints</span>
+                </div>
+                <div style="display: flex; gap: 0.75rem; align-items: center;">
+                    <form th:action="@{/feedback/deleteAll}" method="post" onsubmit="return confirm('Are you sure you want to delete all feedback history?');" style="margin: 0;">
+                        <button type="submit" class="btn-subtle-clear" title="Clear all feedback history">
+                            <i class="fa-regular fa-trash-can"></i>
+                            <span>Clear Feedback History</span>
+                        </button>
+                    </form>
+                    <!-- Instant Search Box -->
+                    <div class="search-box">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="tableSearch" placeholder="Search complaints..." onkeyup="filterTable()">
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body" style="padding: 0;">
+                <!-- Empty State -->
+                <div th:if="${list == null || #lists.isEmpty(list)}" class="empty-state">
+                    <div class="empty-state-icon">
+                        <i class="fa-regular fa-clipboard"></i>
+                    </div>
+                    <h3>No Grievances Reported</h3>
+                    <p>You haven't filed any campus complaints yet. If you have any facility or service issues, click below.</p>
+                    <a href="/complaint/new" class="btn-nav">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Submit New Complaint</span>
+                    </a>
+                </div>
+
+                <!-- Table -->
+                <div th:if="${list != null && !#lists.isEmpty(list)}" class="table-responsive">
+                    <table class="custom-table" id="complaintsTable">
+                        <thead>
+                        <tr>
+                            <th style="width: 22%;">Title</th>
+                            <th style="width: 28%;">Description</th>
+                            <th style="width: 14%;">Status</th>
+                            <th style="width: 16%;">Assigned Worker</th>
+                            <th style="width: 20%;">Feedback</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="c : ${list}">
+                            <td>
+                                <strong style="color: var(--text-heading);" th:text="${c.title}">Title</strong>
+                            </td>
+                            <td style="color: var(--text-muted);" th:text="${c.description}">Description</td>
+                            <td>
+                                <span th:if="${c.status == 'Pending'}" class="badge badge-pending">
+                                    <span class="badge-dot"></span>
+                                    <span>Pending</span>
+                                </span>
+                                <span th:if="${c.status == 'In Progress'}" class="badge badge-in-progress">
+                                    <span class="badge-dot"></span>
+                                    <span>In Progress</span>
+                                </span>
+                                <span th:if="${c.status == 'Resolved'}" class="badge badge-resolved">
+                                    <span class="badge-dot"></span>
+                                    <span>Resolved</span>
+                                </span>
+                                <span th:if="${c.status != 'Pending' && c.status != 'In Progress' && c.status != 'Resolved'}" class="badge" style="background: #f1f5f9; color: #475569;" th:text="${c.status}">
+                                    Status
+                                </span>
+                            </td>
+                            <td>
+                                <span th:if="${c.worker != null && c.isReassigned()}" class="badge badge-reassigned">
+                                    <span class="badge-dot"></span>
+                                    <i class="fa-solid fa-rotate-left" style="font-size: 0.75rem; margin-right: 0.15rem;"></i>
+                                    <span th:text="${'Reassigned: ' + c.worker.name}">Reassigned: Worker</span>
+                                </span>
+                                <span th:if="${c.worker != null && !c.isReassigned()}" class="badge badge-assigned">
+                                    <span class="badge-dot"></span>
+                                    <i class="fa-solid fa-user-gear" style="font-size: 0.75rem; margin-right: 0.15rem;"></i>
+                                    <span th:text="${c.worker.name}">Worker Name</span>
+                                </span>
+                                <span th:if="${c.worker == null}" class="badge badge-unassigned">
+                                    <span class="badge-dot"></span>
+                                    <i class="fa-solid fa-clock" style="font-size: 0.75rem; margin-right: 0.15rem;"></i>
+                                    <span>Unassigned</span>
+                                </span>
+                            </td>
+                            <td>
+                                <div th:if="${c.feedback != null && !#strings.isEmpty(c.feedback)}" class="feedback-box" style="margin-bottom: 0.35rem; display: flex; align-items: center; justify-content: space-between;">
+                                    <div>
+                                        <i class="fa-regular fa-comment-dots" style="color: #e11d48; margin-right: 0.35rem;"></i>
+                                        <strong style="color: #9f1239; margin-right: 0.25rem;">Feedback:</strong>
+                                        <span th:text="${c.feedback}">Feedback</span>
+                                    </div>
+                                    <form th:action="@{/feedback/delete}" method="post" style="display: inline; margin: 0;">
+                                        <input type="hidden" name="id" th:value="${c.id}">
+                                        <button type="submit" class="btn-icon-subtle" title="Delete feedback">
+                                            <i class="fa-regular fa-trash-can"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                                <form th:action="@{/feedback}" method="post" style="display: flex; gap: 0.5rem; align-items: center;">
+                                    <input type="hidden" name="id" th:value="${c.id}">
+                                    <input type="text"
+                                           name="feedback"
+                                           placeholder="Enter feedback..."
+                                           required
+                                           style="padding: 0.45rem 0.75rem; font-size: 0.85rem; flex: 1;">
+                                    <button type="submit" class="btn-outline" style="padding: 0.45rem 0.85rem; white-space: nowrap;">
+                                        <i class="fa-solid fa-paper-plane"></i>
+                                        <span>Send</span>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2026 CampusCare. Empowering better campus living.</p>
+    </footer>
+
+    <!-- Instant Search JS Script -->
+    <script>
+        function filterTable() {
+            const input = document.getElementById("tableSearch");
+            const filter = input.value.toLowerCase();
+            const table = document.getElementById("complaintsTable");
+            const trs = table.getElementsByTagName("tr");
+
+            for (let i = 1; i < trs.length; i++) {
+                const tr = trs[i];
+                const text = tr.textContent.toLowerCase();
+                tr.style.display = text.indexOf(filter) > -1 ? "" : "none";
+            }
+        }
+    </script>
+
+</body>
+</html>

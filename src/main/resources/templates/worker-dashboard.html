@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CampusCare - Technician Workbench</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+    <!-- Header / Navbar -->
+    <nav class="navbar">
+        <a href="/worker" class="nav-brand">
+            <div class="nav-brand-icon">
+                <i class="fa-solid fa-graduation-cap"></i>
+            </div>
+            <span>CampusCare</span>
+        </a>
+        <div class="nav-right">
+            <div class="nav-user-badge">
+                <i class="fa-solid fa-screwdriver-wrench"></i>
+                <span th:text="${session.user != null ? session.user.name : 'Technician Workbench'}">Technician Portal</span>
+            </div>
+            <a href="/logout" class="btn-outline">
+                <i class="fa-solid fa-right-from-bracket"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Page Title & Header -->
+        <div class="page-header">
+            <div class="page-title">
+                <h2>Technician Assignment Workspace</h2>
+                <p>Manage assigned maintenance tasks, update resolution statuses, and view user feedback</p>
+            </div>
+        </div>
+
+        <!-- Stats Overview Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-info">
+                    <h4>Assigned Work Orders</h4>
+                    <div class="stat-value" th:text="${list != null ? list.size() : 0}">0</div>
+                </div>
+                <div class="stat-icon purple">
+                    <i class="fa-solid fa-toolbox"></i>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-info">
+                    <h4>Pending Tasks</h4>
+                    <div class="stat-value" th:text="${list != null ? #lists.size(list.?[status == 'Pending' || status == 'In Progress']) : 0}">0</div>
+                </div>
+                <div class="stat-icon amber">
+                    <i class="fa-solid fa-spinner"></i>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-info">
+                    <h4>Completed Jobs</h4>
+                    <div class="stat-value" th:text="${list != null ? #lists.size(list.?[status == 'Resolved']) : 0}">0</div>
+                </div>
+                <div class="stat-icon emerald">
+                    <i class="fa-solid fa-circle-check"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Assigned Work Orders Data Grid Card -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fa-solid fa-list-check" style="color: var(--primary);"></i>
+                    <span>Work Orders List</span>
+                </div>
+                <!-- Instant Search Box -->
+                <div class="search-box">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="workerSearch" placeholder="Search work orders..." onkeyup="filterWorkerTable()">
+                </div>
+            </div>
+
+            <div class="card-body" style="padding: 0;">
+                <!-- Empty State -->
+                <div th:if="${list == null || #lists.isEmpty(list)}" class="empty-state">
+                    <div class="empty-state-icon">
+                        <i class="fa-solid fa-clipboard-check"></i>
+                    </div>
+                    <h3>No Assigned Work Orders</h3>
+                    <p>You currently have no pending tasks assigned by the administrator. Check back later!</p>
+                </div>
+
+                <!-- Table -->
+                <div th:if="${list != null && !#lists.isEmpty(list)}" class="table-responsive">
+                    <table class="custom-table" id="workerTable">
+                        <thead>
+                        <tr>
+                            <th style="width: 18%;">Job Title</th>
+                            <th style="width: 24%;">Job Details</th>
+                            <th style="width: 18%;">Assigned Notification</th>
+                            <th style="width: 13%;">Current Status</th>
+                            <th style="width: 15%;">User Feedback</th>
+                            <th style="width: 12%;">Action</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="c : ${list}">
+                            <td>
+                                <strong style="color: var(--text-heading);" th:text="${c.title}">Title</strong>
+                            </td>
+                            <td style="color: var(--text-muted);" th:text="${c.description}">Description</td>
+                            <td>
+                                <span th:if="${c.isReassigned()}" class="badge badge-reassigned">
+                                    <span class="badge-dot"></span>
+                                    <i class="fa-solid fa-rotate-left" style="font-size: 0.75rem; margin-right: 0.15rem;"></i>
+                                    <span>Reassigned by Admin</span>
+                                </span>
+                                <span th:if="${!c.isReassigned()}" class="badge badge-notification">
+                                    <span class="badge-dot"></span>
+                                    <i class="fa-solid fa-bell" style="font-size: 0.75rem; margin-right: 0.15rem;"></i>
+                                    <span>Assigned by Admin</span>
+                                </span>
+                            </td>
+                            <td>
+                                <span th:if="${c.status == 'Pending'}" class="badge badge-pending">
+                                    <span class="badge-dot"></span>
+                                    <span>Pending</span>
+                                </span>
+                                <span th:if="${c.status == 'In Progress'}" class="badge badge-in-progress">
+                                    <span class="badge-dot"></span>
+                                    <span>In Progress</span>
+                                </span>
+                                <span th:if="${c.status == 'Resolved'}" class="badge badge-resolved">
+                                    <span class="badge-dot"></span>
+                                    <span>Resolved</span>
+                                </span>
+                                <span th:if="${c.status != 'Pending' && c.status != 'In Progress' && c.status != 'Resolved'}" class="badge" style="background: #f1f5f9; color: #475569;" th:text="${c.status}">
+                                    Status
+                                </span>
+                            </td>
+                            <td>
+                                <span th:if="${c.feedback != null && !#strings.isEmpty(c.feedback)}" class="feedback-box">
+                                    <i class="fa-regular fa-comment-dots" style="color: #e11d48; margin-right: 0.35rem;"></i>
+                                    <strong style="color: #9f1239; margin-right: 0.25rem;">User Feedback:</strong>
+                                    <span th:text="${c.feedback}">Feedback text</span>
+                                </span>
+                                <span th:if="${c.feedback == null || #strings.isEmpty(c.feedback)}" style="color: var(--text-light); font-style: italic; font-size: 0.85rem;">
+                                    No feedback yet
+                                </span>
+                            </td>
+                            <td>
+                                <form th:action="@{/updateStatus}" method="post" style="display: flex; gap: 0.4rem; align-items: center;">
+                                    <input type="hidden" name="id" th:value="${c.id}">
+                                    <select name="status" style="padding: 0.4rem 0.5rem; font-size: 0.85rem; width: auto;">
+                                        <option value="Pending" th:selected="${c.status == 'Pending'}">Pending</option>
+                                        <option value="In Progress" th:selected="${c.status == 'In Progress'}">In Progress</option>
+                                        <option value="Resolved" th:selected="${c.status == 'Resolved'}">Resolved</option>
+                                    </select>
+                                    <button type="submit" class="btn-outline" style="padding: 0.4rem 0.75rem; font-size: 0.825rem; white-space: nowrap;">
+                                        <i class="fa-solid fa-floppy-disk"></i> Save
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2026 CampusCare. Empowering campus maintenance operations.</p>
+    </footer>
+
+    <!-- Filter script -->
+    <script>
+        function filterWorkerTable() {
+            const input = document.getElementById("workerSearch");
+            const filter = input.value.toLowerCase();
+            const table = document.getElementById("workerTable");
+            const trs = table.getElementsByTagName("tr");
+
+            for (let i = 1; i < trs.length; i++) {
+                const tr = trs[i];
+                const text = tr.textContent.toLowerCase();
+                tr.style.display = text.indexOf(filter) > -1 ? "" : "none";
+            }
+        }
+    </script>
+
+</body>
+</html>

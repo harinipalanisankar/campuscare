@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CampusCare - Admin Console</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+    <!-- Header / Navbar -->
+    <nav class="navbar">
+        <a href="/admin" class="nav-brand">
+            <div class="nav-brand-icon">
+                <i class="fa-solid fa-graduation-cap"></i>
+            </div>
+            <span>CampusCare</span>
+        </a>
+        <div class="nav-right">
+            <div class="nav-user-badge">
+                <i class="fa-solid fa-user-shield"></i>
+                <span th:text="${session.user != null ? session.user.name : 'System Administrator'}">Admin Console</span>
+            </div>
+            <a href="/logout" class="btn-outline">
+                <i class="fa-solid fa-right-from-bracket"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Page Title & Header -->
+        <div class="page-header">
+            <div class="page-title">
+                <h2>System Administration Console</h2>
+                <p>Monitor all campus grievances, assign skilled technicians, and oversee resolution status</p>
+            </div>
+        </div>
+
+        <!-- Alert Notification for Invalid Worker -->
+        <div th:if="${param.error != null && param.error[0] == 'invalid_worker'}" class="alert alert-danger">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <span><strong>Assignment Failed:</strong> The specified Worker is invalid or unassigned.</span>
+        </div>
+
+        <!-- Alert Notification for Successful Worker Assignment -->
+        <div th:if="${param.assigned != null}" class="alert alert-success">
+            <i class="fa-solid fa-circle-check"></i>
+            <span><strong>Assignment Notification Sent:</strong> Complaint successfully assigned to technician and notification dispatched.</span>
+        </div>
+
+        <!-- Stats Overview Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-info">
+                    <h4>Total Campus Grievances</h4>
+                    <div class="stat-value" th:text="${list != null ? list.size() : 0}">0</div>
+                </div>
+                <div class="stat-icon blue">
+                    <i class="fa-solid fa-building-user"></i>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-info">
+                    <h4>Pending Resolution</h4>
+                    <div class="stat-value" th:text="${list != null ? #lists.size(list.?[status == 'Pending' || status == 'In Progress']) : 0}">0</div>
+                </div>
+                <div class="stat-icon amber">
+                    <i class="fa-solid fa-hourglass-half"></i>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-info">
+                    <h4>Resolved Grievances</h4>
+                    <div class="stat-value" th:text="${list != null ? #lists.size(list.?[status == 'Resolved']) : 0}">0</div>
+                </div>
+                <div class="stat-icon emerald">
+                    <i class="fa-solid fa-circle-check"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Complaints Data Grid Card -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fa-solid fa-sliders" style="color: var(--primary);"></i>
+                    <span>All Registered Complaints & Assignments</span>
+                </div>
+                <!-- Instant Search Box -->
+                <div class="search-box">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="adminSearch" placeholder="Search grievances..." onkeyup="filterAdminTable()">
+                </div>
+            </div>
+
+            <div class="card-body" style="padding: 0;">
+                <!-- Empty State -->
+                <div th:if="${list == null || #lists.isEmpty(list)}" class="empty-state">
+                    <div class="empty-state-icon">
+                        <i class="fa-solid fa-inbox"></i>
+                    </div>
+                    <h3>No Campus Complaints Found</h3>
+                    <p>There are currently no complaints registered in the system system-wide.</p>
+                </div>
+
+                <!-- Table -->
+                <div th:if="${list != null && !#lists.isEmpty(list)}" class="table-responsive">
+                    <table class="custom-table" id="adminTable">
+                        <thead>
+                        <tr>
+                            <th style="width: 5%;">ID</th>
+                            <th style="width: 14%;">Student</th>
+                            <th style="width: 20%;">Title</th>
+                            <th style="width: 10%;">Status</th>
+                            <th style="width: 18%;">Assigned Notification</th>
+                            <th style="width: 14%;">User Feedback</th>
+                            <th style="width: 25%;">Assign / Reassign Worker</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="c : ${list}">
+                            <td>
+                                <span style="font-weight: 700; color: var(--text-muted); font-size: 0.85rem;" th:text="${'#' + c.id}">#1</span>
+                            </td>
+                            <td>
+                                <strong style="color: var(--text-heading);" th:text="${c.user != null ? c.user.name : 'Unknown Student'}">Student Name</strong>
+                            </td>
+                            <td th:text="${c.title}">Complaint Title</td>
+                            <td>
+                                <span th:if="${c.status == 'Pending'}" class="badge badge-pending">
+                                    <span class="badge-dot"></span>
+                                    <span>Pending</span>
+                                </span>
+                                <span th:if="${c.status == 'In Progress'}" class="badge badge-in-progress">
+                                    <span class="badge-dot"></span>
+                                    <span>In Progress</span>
+                                </span>
+                                <span th:if="${c.status == 'Resolved'}" class="badge badge-resolved">
+                                    <span class="badge-dot"></span>
+                                    <span>Resolved</span>
+                                </span>
+                                <span th:if="${c.status != 'Pending' && c.status != 'In Progress' && c.status != 'Resolved'}" class="badge" style="background: #f1f5f9; color: #475569;" th:text="${c.status}">
+                                    Status
+                                </span>
+                            </td>
+                            <td>
+                                <span th:if="${c.worker != null && c.isReassigned()}" class="badge badge-reassigned">
+                                    <span class="badge-dot"></span>
+                                    <i class="fa-solid fa-rotate-left" style="font-size: 0.75rem; margin-right: 0.15rem;"></i>
+                                    <span th:text="${'Reassigned: ' + c.worker.name}">Reassigned: Worker</span>
+                                </span>
+                                <span th:if="${c.worker != null && !c.isReassigned()}" class="badge badge-assigned">
+                                    <span class="badge-dot"></span>
+                                    <i class="fa-solid fa-bell" style="font-size: 0.75rem; margin-right: 0.15rem;"></i>
+                                    <span th:text="${'Assigned: ' + c.worker.name}">Assigned: Worker</span>
+                                </span>
+                                <span th:if="${c.worker == null}" class="badge badge-unassigned">
+                                    <span class="badge-dot"></span>
+                                    <i class="fa-solid fa-bell-slash" style="font-size: 0.75rem; margin-right: 0.15rem;"></i>
+                                    <span>Unassigned</span>
+                                </span>
+                            </td>
+                            <td>
+                                <span th:if="${c.feedback != null && !#strings.isEmpty(c.feedback)}" class="feedback-box">
+                                    <i class="fa-regular fa-comment-dots" style="color: #e11d48; margin-right: 0.35rem;"></i>
+                                    <strong style="color: #9f1239; margin-right: 0.25rem;">User Feedback:</strong>
+                                    <span th:text="${c.feedback}">Feedback</span>
+                                </span>
+                                <span th:if="${c.feedback == null || #strings.isEmpty(c.feedback)}" style="color: var(--text-light); font-style: italic; font-size: 0.85rem;">
+                                    No feedback yet
+                                </span>
+                            </td>
+                            <td>
+                                <form th:action="@{/assign}" method="post" style="display: flex; gap: 0.4rem; align-items: center;">
+                                    <input type="hidden" name="complaintId" th:value="${c.id}">
+                                    
+                                    <!-- Dynamic Worker Selection Dropdown -->
+                                    <select name="workerId" required style="padding: 0.4rem 0.6rem; font-size: 0.85rem; flex: 1.5; min-width: 140px;">
+                                        <option value="" disabled th:selected="${c.worker == null}">-- Select Worker --</option>
+                                        <option th:each="w : ${workers}"
+                                                th:value="${w.id}"
+                                                th:text="${w.name}"
+                                                th:selected="${c.worker != null && c.worker.id == w.id}">
+                                            Worker Name
+                                        </option>
+                                    </select>
+
+                                    <select name="status" style="padding: 0.4rem 0.5rem; font-size: 0.85rem; flex: 1;">
+                                        <option value="Pending" th:selected="${c.status == 'Pending'}">Pending</option>
+                                        <option value="In Progress" th:selected="${c.status == 'In Progress'}">In Progress</option>
+                                        <option value="Resolved" th:selected="${c.status == 'Resolved'}">Resolved</option>
+                                    </select>
+
+                                    <button type="submit" class="btn-outline" style="padding: 0.4rem 0.75rem; font-size: 0.825rem; white-space: nowrap;">
+                                        <i class="fa-solid fa-user-gear"></i>
+                                        <span th:text="${c.worker != null ? 'Reassign' : 'Assign'}">Assign</span>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2026 CampusCare. System Administration Console.</p>
+    </footer>
+
+    <!-- Table Search Filter Script -->
+    <script>
+        function filterAdminTable() {
+            const input = document.getElementById("adminSearch");
+            const filter = input.value.toLowerCase();
+            const table = document.getElementById("adminTable");
+            const trs = table.getElementsByTagName("tr");
+
+            for (let i = 1; i < trs.length; i++) {
+                const tr = trs[i];
+                const text = tr.textContent.toLowerCase();
+                tr.style.display = text.indexOf(filter) > -1 ? "" : "none";
+            }
+        }
+    </script>
+
+</body>
+</html>

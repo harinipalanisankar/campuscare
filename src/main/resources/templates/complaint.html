@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CampusCare - Submit Grievance</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+    <!-- Header / Navbar -->
+    <nav class="navbar">
+        <a href="/user" class="nav-brand">
+            <div class="nav-brand-icon">
+                <i class="fa-solid fa-graduation-cap"></i>
+            </div>
+            <span>CampusCare</span>
+        </a>
+        <div class="nav-right">
+            <a href="/user" class="btn-outline">
+                <i class="fa-solid fa-arrow-left"></i>
+                <span>Back to Dashboard</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container" style="display: flex; justify-content: center; align-items: center;">
+        <div class="form-card" style="width: 100%; max-width: 600px; margin: 1.5rem 0;">
+            <div class="form-header">
+                <div style="display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 64px; background: linear-gradient(135deg, var(--primary) 0%, #6366f1 100%); color: white; border-radius: var(--radius-md); font-size: 1.75rem; margin-bottom: 1.25rem; box-shadow: 0 8px 20px var(--primary-glow);">
+                    <i class="fa-solid fa-file-pen"></i>
+                </div>
+                <h2>Raise a New Grievance</h2>
+                <p>Provide details regarding the maintenance or campus facility issue you experienced</p>
+            </div>
+
+            <form th:action="@{/submit}" th:object="${complaint}" method="post">
+                <div class="form-group">
+                    <label for="title">
+                        <i class="fa-solid fa-heading" style="margin-right: 0.35rem; color: var(--primary);"></i>
+                        Complaint Title
+                    </label>
+                    <input type="text" id="title" th:field="*{title}" class="form-control" placeholder="e.g., Water Leakage in Hostel Block B - Room 204" required autofocus>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.85rem;">
+                    <label for="description">
+                        <i class="fa-solid fa-align-left" style="margin-right: 0.35rem; color: var(--primary);"></i>
+                        Detailed Description
+                    </label>
+                    <textarea id="description" th:field="*{description}" class="form-control" rows="5" placeholder="Describe the problem in detail (e.g. location, timing, urgency)..." required></textarea>
+                </div>
+
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <a href="/user" class="btn-outline" style="flex: 1; text-align: center; justify-content: center; padding: 0.85rem;">
+                        Cancel
+                    </a>
+                    <button type="submit" class="btn-submit" style="flex: 2;">
+                        <i class="fa-solid fa-paper-plane"></i>
+                        <span>Submit Complaint</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2026 CampusCare. Empowering prompt issue resolution.</p>
+    </footer>
+
+</body>
+</html>

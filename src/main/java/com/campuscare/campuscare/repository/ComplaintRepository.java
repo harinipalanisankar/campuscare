@@ -1,0 +1,12 @@
+package com.campuscare.campuscare.repository;
+
+import com.campuscare.campuscare.entity.Complaint;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+import java.util.List;
+
+@Repository
+public interface ComplaintRepository extends JpaRepository<Complaint, Long> {
+    List<Complaint> findByUserId(Long userId);
+    List<Complaint> findByWorkerId(Long workerId);
+}
